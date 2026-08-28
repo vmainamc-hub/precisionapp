@@ -27,7 +27,7 @@ export const AuthModal: React.FC = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleOAuthInit = async (openInPopup = false) => {
+  const handleOAuthInit = async (openInPopup: boolean = false) => {
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -35,14 +35,20 @@ export const AuthModal: React.FC = () => {
       const res = await api.initPkceOAuth();
       addToast('info', 'Connecting to Deriv', 'Redirecting to Deriv OAuth 2.0 PKCE authentication flow...');
       
-      if (openInPopup) {
+      if (openInPopup === true) {
         const popup = window.open(res.authUrl, 'DerivOAuth', 'width=600,height=750,scrollbars=yes,status=yes');
         const handleMessage = async (event: MessageEvent) => {
           if (event.data?.type === 'DERIV_AUTH_SUCCESS') {
             window.removeEventListener('message', handleMessage);
             await refreshAuth();
             setIsAuthModalOpen(false);
-            if (popup && !popup.closed) popup.close();
+            if (popup && !popup.closed) {
+              try {
+                popup.close();
+              } catch (e) {
+                // ignore
+              }
+            }
           }
         };
         window.addEventListener('message', handleMessage);
@@ -199,7 +205,7 @@ export const AuthModal: React.FC = () => {
               </div>
 
               <button
-                onClick={handleOAuthInit}
+                onClick={() => handleOAuthInit(false)}
                 disabled={isLoading}
                 className="w-full py-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-950/40 flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
               >

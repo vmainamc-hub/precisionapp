@@ -149,10 +149,24 @@ export const OAuthCallback: React.FC<{ onComplete?: () => void }> = ({ onComplet
         // Notify opener window if popup was used
         if (window.opener && !window.opener.closed) {
           try {
-            window.opener.postMessage({ type: 'DERIV_AUTH_SUCCESS', account: activeAcc }, '*');
+            const targetOrigin = window.location.origin;
+            window.opener.postMessage({ type: 'DERIV_AUTH_SUCCESS', account: activeAcc }, targetOrigin);
           } catch (e) {
-            // cross-origin popup broadcast catch
+            try {
+              window.opener.postMessage({ type: 'DERIV_AUTH_SUCCESS', account: activeAcc }, '*');
+            } catch (err) {
+              // ignore
+            }
           }
+          // Cleanly close popup window after communicating with opener
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (e) {
+              // ignore
+            }
+          }, 350);
+          return;
         }
       } catch (err: any) {
         console.error('Deriv OAuth Exchange Failed', err);
