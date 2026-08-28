@@ -1,0 +1,6 @@
+{
+  "name": "PrecisionEdge",
+  "description": "Professional third-party web trading platform integrated with Deriv API architecture, featuring real-time market data, interactive charting, automated bot strategies, and risk management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
