@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TradingProvider, useTrading } from './context/TradingContext';
 import { Navbar } from './components/Navbar';
-import { Sidebar } from './components/Sidebar';
-import { LandingPage } from './components/LandingPage';
-import { TradingDashboard } from './components/TradingDashboard/TradingDashboard';
-import { AnalysisCenter } from './components/AnalysisCenter/AnalysisCenter';
+import { SmartTraderView } from './components/SmartTrader/SmartTraderView';
+import { DigitsView } from './components/DigitsCenter/DigitsView';
+import { DashboardOverview } from './components/Dashboard/DashboardOverview';
 import { BotsCenter } from './components/BotsCenter/BotsCenter';
-import { PortfolioView } from './components/Portfolio/PortfolioView';
-import { SettingsView } from './components/Settings/SettingsView';
-import { AdminView } from './components/Admin/AdminView';
+import { HistoryView } from './components/History/HistoryView';
+import { AccountView } from './components/Account/AccountView';
 import { AuthModal } from './components/AuthModal';
 import { MarketModal } from './components/TradingDashboard/MarketModal';
 import { NotificationToast } from './components/NotificationToast';
@@ -16,7 +14,6 @@ import { OAuthCallback } from './components/OAuthCallback';
 
 const MainLayout: React.FC = () => {
   const { activeView, setActiveView } = useTrading();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [isMarketModalOpen, setIsMarketModalOpen] = useState<boolean>(false);
 
   // Check if current URL is an OAuth callback
@@ -39,41 +36,27 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Top Header Navbar */}
+      {/* Horizontal Top Navigation */}
       <Navbar onOpenMarketModal={() => setIsMarketModalOpen(true)} />
 
-      {/* Body Area: Sidebar + Active View Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          setCollapsed={setSidebarCollapsed}
-        />
-
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          {isOAuthCallback ? (
-            <OAuthCallback onComplete={() => setIsOAuthCallback(false)} />
-          ) : activeView === 'landing' ? (
-            <LandingPage />
-          ) : activeView === 'terminal' ? (
-            <TradingDashboard onOpenMarketModal={() => setIsMarketModalOpen(true)} />
-          ) : activeView === 'analysis' ? (
-            <AnalysisCenter onSelectMarket={(symbol) => {
-              // Select market and transition to terminal
-              setActiveView('terminal');
-            }} />
-          ) : activeView === 'bots' ? (
-            <BotsCenter />
-          ) : activeView === 'portfolio' ? (
-            <PortfolioView />
-          ) : activeView === 'settings' ? (
-            <SettingsView />
-          ) : activeView === 'admin' ? (
-            <AdminView />
-          ) : (
-            <TradingDashboard onOpenMarketModal={() => setIsMarketModalOpen(true)} />
-          )}
-        </main>
-      </div>
+      {/* Main Content Workspace (Full Width, No Left Sidebar) */}
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        {isOAuthCallback ? (
+          <OAuthCallback onComplete={() => setIsOAuthCallback(false)} />
+        ) : activeView === 'dashboard' || activeView === 'landing' ? (
+          <DashboardOverview onOpenMarketModal={() => setIsMarketModalOpen(true)} />
+        ) : activeView === 'digits' || activeView === 'analysis' ? (
+          <DigitsView onTradeDigit={() => setActiveView('smarttrader')} />
+        ) : activeView === 'bots' ? (
+          <BotsCenter />
+        ) : activeView === 'history' || activeView === 'portfolio' ? (
+          <HistoryView />
+        ) : activeView === 'account' || activeView === 'settings' || activeView === 'admin' ? (
+          <AccountView />
+        ) : (
+          <SmartTraderView onOpenMarketModal={() => setIsMarketModalOpen(true)} />
+        )}
+      </main>
 
       {/* Global Modals & Notifications */}
       <AuthModal />

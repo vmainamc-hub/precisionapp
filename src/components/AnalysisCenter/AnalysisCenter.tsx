@@ -52,9 +52,11 @@ export const AnalysisCenter: React.FC<{ onSelectMarket: (symbol: string) => void
   });
 
   // Calculate quick Support & Resistance
-  const lastCloses = candles.map(c => c.close);
-  const support = Math.min(...candles.slice(-40).map(c => c.low || livePrice * 0.99));
-  const resistance = Math.max(...candles.slice(-40).map(c => c.high || livePrice * 1.01));
+  const safeLivePrice = typeof livePrice === 'number' && !isNaN(livePrice) && livePrice > 0 ? livePrice : (activeMarket?.basePrice || 100);
+  const safeCandles = Array.isArray(candles) && candles.length > 0 ? candles.slice(-40) : [];
+  const support = safeCandles.length > 0 ? Math.min(...safeCandles.map(c => c?.low || safeLivePrice * 0.99)) : safeLivePrice * 0.99;
+  const resistance = safeCandles.length > 0 ? Math.max(...safeCandles.map(c => c?.high || safeLivePrice * 1.01)) : safeLivePrice * 1.01;
+  const safeDigits = activeMarket?.digits ?? 2;
 
   // Multi-timeframe trend evaluations
   const timeframesMatrix = [
@@ -109,27 +111,27 @@ export const AnalysisCenter: React.FC<{ onSelectMarket: (symbol: string) => void
         <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-              Active Focus: {activeMarket.name}
+              Active Focus: {activeMarket?.name}
             </span>
             <span className="text-xs font-mono font-bold text-emerald-400">
-              ${livePrice.toFixed(activeMarket.digits)}
+              ${safeLivePrice.toFixed(safeDigits)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs font-mono">
             <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80">
               <span className="text-[10px] text-slate-400 block uppercase">Key Support</span>
-              <span className="text-emerald-400 font-bold text-sm">${support.toFixed(activeMarket.digits)}</span>
+              <span className="text-emerald-400 font-bold text-sm">${support.toFixed(safeDigits)}</span>
               <span className="text-[9px] text-slate-400 block mt-0.5">
-                {((livePrice - support) / livePrice * 100).toFixed(2)}% below spot
+                {(safeLivePrice > 0 ? ((safeLivePrice - support) / safeLivePrice * 100) : 0).toFixed(2)}% below spot
               </span>
             </div>
 
             <div className="p-2.5 rounded bg-slate-950 border border-slate-800/80">
               <span className="text-[10px] text-slate-400 block uppercase">Key Resistance</span>
-              <span className="text-rose-400 font-bold text-sm">${resistance.toFixed(activeMarket.digits)}</span>
+              <span className="text-rose-400 font-bold text-sm">${resistance.toFixed(safeDigits)}</span>
               <span className="text-[9px] text-slate-400 block mt-0.5">
-                {((resistance - livePrice) / livePrice * 100).toFixed(2)}% above spot
+                {(safeLivePrice > 0 ? ((resistance - safeLivePrice) / safeLivePrice * 100) : 0).toFixed(2)}% above spot
               </span>
             </div>
           </div>

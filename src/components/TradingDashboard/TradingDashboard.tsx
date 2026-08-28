@@ -61,9 +61,9 @@ export const TradingDashboard: React.FC<{ onOpenMarketModal: () => void }> = ({ 
           {/* Live Spot Price */}
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-base md:text-xl font-extrabold text-white">
-              {livePrice.toLocaleString('en-US', {
-                minimumFractionDigits: activeMarket.digits,
-                maximumFractionDigits: activeMarket.digits
+              {(typeof livePrice === 'number' && !isNaN(livePrice) ? livePrice : 0).toLocaleString('en-US', {
+                minimumFractionDigits: activeMarket?.digits ?? 2,
+                maximumFractionDigits: activeMarket?.digits ?? 2
               })}
             </span>
             <span
@@ -73,7 +73,7 @@ export const TradingDashboard: React.FC<{ onOpenMarketModal: () => void }> = ({ 
             >
               {isPositive ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
               {isPositive ? '+' : ''}
-              {priceChange24h.toFixed(2)}%
+              {(priceChange24h ?? 0).toFixed(2)}%
             </span>
           </div>
         </div>
@@ -82,11 +82,11 @@ export const TradingDashboard: React.FC<{ onOpenMarketModal: () => void }> = ({ 
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="hidden md:block text-right">
             <span className="text-[10px] text-slate-400 block uppercase">24h High</span>
-            <span className="text-slate-200 font-semibold">{activeMarket.high24h.toFixed(activeMarket.digits)}</span>
+            <span className="text-slate-200 font-semibold">{(activeMarket?.high24h ?? 0).toFixed(activeMarket?.digits ?? 2)}</span>
           </div>
           <div className="hidden md:block text-right">
             <span className="text-[10px] text-slate-400 block uppercase">24h Low</span>
-            <span className="text-slate-200 font-semibold">{activeMarket.low24h.toFixed(activeMarket.digits)}</span>
+            <span className="text-slate-200 font-semibold">{(activeMarket?.low24h ?? 0).toFixed(activeMarket?.digits ?? 2)}</span>
           </div>
           <div className="hidden lg:block text-right">
             <span className="text-[10px] text-slate-400 block uppercase">Volatility Index</span>

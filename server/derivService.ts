@@ -24,7 +24,6 @@ export class DerivService {
   private environment: 'demo' | 'real';
   private livePrices: Map<string, number> = new Map();
   private priceHistories: Map<string, { time: number; open: number; high: number; low: number; close: number; volume?: number }[]> = new Map();
-  private botInterval: NodeJS.Timeout | null = null;
   private tickInterval: NodeJS.Timeout | null = null;
   private pkceStates: Map<string, PkceStateRecord> = new Map();
 
@@ -34,7 +33,6 @@ export class DerivService {
     this.environment = (process.env.DERIV_ENVIRONMENT as 'demo' | 'real') || 'demo';
 
     this.initPriceFeeds();
-    this.startBotEngine();
     this.startStateCleaner();
   }
 
@@ -1129,155 +1127,19 @@ export class DerivService {
     });
   }
 
-  // --- 5. Automated Bot Runner Engine ---
-  private startBotEngine() {
-    this.botInterval = setInterval(() => {
-      this.evaluateRunningBots();
-    }, 3000);
-  }
-
-  private evaluateRunningBots() {
-    db.bots.forEach((bot) => {
-      if (bot.status !== 'running') return;
-
-      // Check if bot already has an active open trade
-      const hasOpenTrade = Array.from(db.trades.values()).some(
-        t => t.botId === bot.id && t.status === 'open'
-      );
-      if (hasOpenTrade) return;
-
-      // Check Max Trades limit
-      if (bot.totalTrades >= bot.maxTrades) {
-        bot.status = 'stopped';
-        bot.logs.push({
-          id: 'log_' + Date.now(),
-          time: Date.now(),
-          level: 'risk',
-          message: `Target trade limit reached (${bot.maxTrades} trades). Bot stopped safely.`
-        });
-        return;
-      }
-
-      // Check Take Profit
-      if (bot.totalProfit >= bot.takeProfit) {
-        bot.status = 'stopped';
-        bot.logs.push({
-          id: 'log_' + Date.now(),
-          time: Date.now(),
-          level: 'risk',
-          message: `Take-Profit reached (+$${bot.totalProfit.toFixed(2)} / target $${bot.takeProfit}). Bot secured gains.`
-        });
-        return;
-      }
-
-      // Check Stop Loss
-      if (bot.totalProfit <= -bot.stopLoss) {
-        bot.status = 'stopped';
-        bot.logs.push({
-          id: 'log_' + Date.now(),
-          time: Date.now(),
-          level: 'risk',
-          message: `Stop-Loss limit reached (-$${Math.abs(bot.totalProfit).toFixed(2)} / limit $${bot.stopLoss}). Bot halted.`
-        });
-        return;
-      }
-
-      // Strategy Execution
-      const spot = this.getLivePrice(bot.symbol);
-      const candles = this.priceHistories.get(bot.symbol) || [];
-
-      let triggerTrade = false;
-      let contractType = bot.contractType;
-
-      if (bot.strategyType === 'martingale_trend') {
-        // Follow trend based on last 5 ticks
-        if (candles.length > 5) {
-          const lastClose = candles[candles.length - 1].close;
-          const prevClose = candles[candles.length - 5].close;
-          contractType = lastClose >= prevClose ? 'CALL' : 'PUT';
-          triggerTrade = true;
-        }
-      } else if (bot.strategyType === 'rsi_reversal') {
-        // RSI Mean Reversion
-        triggerTrade = true;
-        contractType = Math.random() > 0.5 ? 'CALL' : 'PUT';
-      } else {
-        triggerTrade = true;
-      }
-
-      if (triggerTrade) {
-        try {
-          const currentStake = bot.currentStake || bot.stake;
-          this.executeBuy({
-            symbol: bot.symbol,
-            contractType,
-            stake: currentStake,
-            duration: bot.duration,
-            durationUnit: bot.durationUnit,
-            botId: bot.id,
-            accountId: bot.accountId
-          });
-
-          bot.lastRunAt = Date.now();
-          bot.logs.unshift({
-            id: 'log_' + Date.now(),
-            time: Date.now(),
-            level: 'trade',
-            message: `Auto-order placed: ${contractType} on ${bot.symbol} with stake $${currentStake.toFixed(2)}`
-          });
-          if (bot.logs.length > 100) bot.logs.pop();
-        } catch (err: any) {
-          bot.logs.unshift({
-            id: 'log_' + Date.now(),
-            time: Date.now(),
-            level: 'error',
-            message: `Execution failed: ${err.message}`
-          });
-        }
-      }
-    });
-  }
-
+  // --- 5. Automated Bot Settlement Handler ---
   private handleBotTradeSettled(botId: string, won: boolean, profit: number) {
     const bot = db.bots.get(botId);
     if (!bot) return;
 
     bot.totalTrades++;
     bot.totalProfit = Math.round((bot.totalProfit + profit) * 100) / 100;
-
     if (won) {
       bot.wonTrades++;
       bot.consecutiveLosses = 0;
-      bot.currentStake = bot.stake; // Reset to base stake on win
-      bot.logs.unshift({
-        id: 'log_' + Date.now(),
-        time: Date.now(),
-        level: 'trade',
-        message: `Trade WON (+$${profit.toFixed(2)}). Stake reset to $${bot.stake.toFixed(2)}. Total Profit: $${bot.totalProfit.toFixed(2)}`
-      });
     } else {
       bot.lostTrades++;
       bot.consecutiveLosses++;
-      // Apply Martingale Multiplier
-      if (bot.consecutiveLosses >= bot.maxConsecutiveLosses) {
-        bot.logs.unshift({
-          id: 'log_' + Date.now(),
-          time: Date.now(),
-          level: 'risk',
-          message: `Max consecutive losses (${bot.maxConsecutiveLosses}) reached. Stake reset to base $${bot.stake.toFixed(2)}.`
-        });
-        bot.currentStake = bot.stake;
-        bot.consecutiveLosses = 0;
-      } else {
-        const nextStake = Math.round(bot.currentStake * bot.martingaleMultiplier * 100) / 100;
-        bot.currentStake = nextStake;
-        bot.logs.unshift({
-          id: 'log_' + Date.now(),
-          time: Date.now(),
-          level: 'trade',
-          message: `Trade LOST (-$${Math.abs(profit).toFixed(2)}). Multiplied next stake to $${nextStake.toFixed(2)}.`
-        });
-      }
     }
   }
 }

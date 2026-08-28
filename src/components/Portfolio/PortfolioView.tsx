@@ -23,15 +23,15 @@ export const PortfolioView: React.FC = () => {
   const totalTrades = tradeHistory.length;
   const wonTrades = tradeHistory.filter(t => t.status === 'won').length;
   const lostTrades = tradeHistory.filter(t => t.status === 'lost').length;
-  const winRate = totalTrades > 0 ? ((wonTrades / totalTrades) * 100).toFixed(1) : '0.0';
+  const winRate = totalTrades > 0 ? (((wonTrades || 0) / totalTrades) * 100).toFixed(1) : '0.0';
 
-  const totalRealizedProfit = tradeHistory.reduce((acc, t) => acc + (t.profit || 0), 0);
-  const totalVolume = tradeHistory.reduce((acc, t) => acc + t.stake, 0);
+  const totalRealizedProfit = tradeHistory.reduce((acc, t) => acc + (t?.profit || 0), 0);
+  const totalVolume = tradeHistory.reduce((acc, t) => acc + (t?.stake || 0), 0);
 
-  const bestTrade = tradeHistory.length > 0 ? Math.max(...tradeHistory.map(t => t.profit || 0)) : 0;
-  const worstTrade = tradeHistory.length > 0 ? Math.min(...tradeHistory.map(t => t.profit || 0)) : 0;
+  const bestTrade = tradeHistory.length > 0 ? Math.max(...tradeHistory.map(t => t?.profit || 0)) : 0;
+  const worstTrade = tradeHistory.length > 0 ? Math.min(...tradeHistory.map(t => t?.profit || 0)) : 0;
 
-  const currentOpenRisk = openPositions.reduce((acc, p) => acc + p.stake, 0);
+  const currentOpenRisk = openPositions.reduce((acc, p) => acc + (p?.stake || 0), 0);
 
   const exportCSV = () => {
     sound.playClick();
@@ -87,7 +87,7 @@ export const PortfolioView: React.FC = () => {
         <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
           <span className="text-xs text-slate-400 font-mono block uppercase">Account Balance</span>
           <div className="text-2xl font-extrabold font-mono text-white">
-            ${activeAccount?.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '10,000.00'}{' '}
+            ${(activeAccount?.balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
             <span className="text-xs text-slate-500 font-normal">USD</span>
           </div>
           <span className="text-[11px] text-slate-500 font-mono">
@@ -99,10 +99,10 @@ export const PortfolioView: React.FC = () => {
           <span className="text-xs text-slate-400 font-mono block uppercase">Realized Profit / Loss</span>
           <div
             className={`text-2xl font-extrabold font-mono ${
-              totalRealizedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              (totalRealizedProfit ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
             }`}
           >
-            {totalRealizedProfit >= 0 ? '+' : ''}${totalRealizedProfit.toFixed(2)}
+            {(totalRealizedProfit ?? 0) >= 0 ? '+' : ''}${(totalRealizedProfit ?? 0).toFixed(2)}
           </div>
           <span className="text-[11px] text-slate-500 font-mono">
             Across {totalTrades} total executions
@@ -122,7 +122,7 @@ export const PortfolioView: React.FC = () => {
         <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
           <span className="text-xs text-slate-400 font-mono block uppercase">Current Open Risk</span>
           <div className="text-2xl font-extrabold font-mono text-amber-400">
-            ${currentOpenRisk.toFixed(2)}
+            ${(currentOpenRisk ?? 0).toFixed(2)}
           </div>
           <span className="text-[11px] text-slate-500 font-mono">
             {openPositions.length} Active in-flight contracts
@@ -140,23 +140,23 @@ export const PortfolioView: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs font-mono">
           <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
             <span className="text-[10px] text-slate-500 uppercase block">Total Volume</span>
-            <span className="text-white font-bold text-sm">${totalVolume.toFixed(2)}</span>
+            <span className="text-white font-bold text-sm">${(totalVolume ?? 0).toFixed(2)}</span>
           </div>
 
           <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
             <span className="text-[10px] text-slate-500 uppercase block">Best Trade</span>
-            <span className="text-emerald-400 font-bold text-sm">+${bestTrade.toFixed(2)}</span>
+            <span className="text-emerald-400 font-bold text-sm">+${(bestTrade ?? 0).toFixed(2)}</span>
           </div>
 
           <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
             <span className="text-[10px] text-slate-500 uppercase block">Worst Trade</span>
-            <span className="text-rose-400 font-bold text-sm">${worstTrade.toFixed(2)}</span>
+            <span className="text-rose-400 font-bold text-sm">${(worstTrade ?? 0).toFixed(2)}</span>
           </div>
 
           <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80">
             <span className="text-[10px] text-slate-500 uppercase block">Profit Factor</span>
             <span className="text-cyan-400 font-bold text-sm">
-              {lostTrades > 0 ? (wonTrades / lostTrades).toFixed(2) : 'N/A'}
+              {lostTrades > 0 ? (((wonTrades || 0) / lostTrades)).toFixed(2) : 'N/A'}
             </span>
           </div>
 
@@ -218,9 +218,9 @@ export const PortfolioView: React.FC = () => {
                           {t.contractType}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-slate-200">${t.stake.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-slate-200">${(t?.stake ?? 0).toFixed(2)}</td>
                       <td className="py-3 px-4 text-slate-400">
-                        {t.entryPrice.toFixed(2)} &rarr; {t.exitPrice ? t.exitPrice.toFixed(2) : '--'}
+                        {(t?.entryPrice ?? 0).toFixed(2)} &rarr; {typeof t?.exitPrice === 'number' && !isNaN(t.exitPrice) ? t.exitPrice.toFixed(2) : '--'}
                       </td>
                       <td className="py-3 px-4">
                         <span
@@ -238,7 +238,7 @@ export const PortfolioView: React.FC = () => {
                           profit >= 0 ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >
-                        {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
+                        {profit >= 0 ? '+' : ''}${(profit ?? 0).toFixed(2)}
                       </td>
                     </tr>
                   );

@@ -53,6 +53,8 @@ export interface ProposalRequest {
   barrier?: number;
   multiplier?: number;
   selectedDigit?: number;
+  proposalId?: string;
+  accountId?: string;
 }
 
 export interface ProposalResponse {

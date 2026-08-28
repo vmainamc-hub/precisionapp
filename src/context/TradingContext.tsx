@@ -16,7 +16,19 @@ import { DERIV_MARKETS } from '../data/markets';
 import { api } from '../services/api';
 import { sound } from '../services/sound';
 
-export type AppView = 'landing' | 'terminal' | 'analysis' | 'bots' | 'portfolio' | 'settings' | 'admin';
+export type AppView = 
+  | 'dashboard' 
+  | 'smarttrader' 
+  | 'digits' 
+  | 'bots' 
+  | 'history' 
+  | 'account' 
+  | 'landing' 
+  | 'terminal' 
+  | 'analysis' 
+  | 'portfolio' 
+  | 'settings' 
+  | 'admin';
 
 export interface ToastMessage {
   id: string;
@@ -83,6 +95,11 @@ interface TradingContextType {
   // Bots
   bots: BotInstance[];
   refreshBots: () => Promise<void>;
+  createBot: (botData: Partial<BotInstance>) => Promise<void>;
+  startBot: (botId: string) => Promise<void>;
+  pauseBot: (botId: string) => Promise<void>;
+  stopBot: (botId: string) => Promise<void>;
+  deleteBot: (botId: string) => Promise<void>;
 
   // Notifications & Sound
   toasts: ToastMessage[];
@@ -111,7 +128,7 @@ const TradingContext = createContext<TradingContextType | undefined>(undefined);
 
 export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation
-  const [activeView, setActiveView] = useState<AppView>('landing');
+  const [activeView, setActiveView] = useState<AppView>('smarttrader');
 
   // Markets
   const [markets] = useState<SymbolInfo[]>(DERIV_MARKETS);
@@ -301,6 +318,67 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => clearInterval(interval);
   }, [refreshBots]);
 
+  // Bot Management Handlers
+  const createBot = async (botData: Partial<BotInstance>) => {
+    try {
+      sound.playClick();
+      const newBot = await api.createBot(botData);
+      setBots(prev => [...prev, newBot]);
+      addToast('success', 'Bot Deployed', `Bot "${newBot.name || 'New Bot'}" deployed successfully`);
+      await refreshBots();
+    } catch (err: any) {
+      addToast('error', 'Bot Deployment Failed', err.message || 'Failed to deploy bot');
+    }
+  };
+
+  const startBot = async (botId: string) => {
+    try {
+      sound.playClick();
+      const updated = await api.setBotStatus(botId, 'running');
+      setBots(prev => prev.map(b => b.id === botId ? updated : b));
+      addToast('success', 'Bot Started', 'Bot is actively analyzing ticks and executing trades');
+      await refreshBots();
+    } catch (err: any) {
+      addToast('error', 'Action Failed', err.message || 'Could not start bot');
+    }
+  };
+
+  const pauseBot = async (botId: string) => {
+    try {
+      sound.playClick();
+      const updated = await api.setBotStatus(botId, 'paused');
+      setBots(prev => prev.map(b => b.id === botId ? updated : b));
+      addToast('info', 'Bot Paused', 'Bot execution paused');
+      await refreshBots();
+    } catch (err: any) {
+      addToast('error', 'Action Failed', err.message || 'Could not pause bot');
+    }
+  };
+
+  const stopBot = async (botId: string) => {
+    try {
+      sound.playClick();
+      const updated = await api.setBotStatus(botId, 'stopped');
+      setBots(prev => prev.map(b => b.id === botId ? updated : b));
+      addToast('info', 'Bot Stopped', 'Bot stopped and pending runs terminated');
+      await refreshBots();
+    } catch (err: any) {
+      addToast('error', 'Action Failed', err.message || 'Could not stop bot');
+    }
+  };
+
+  const deleteBot = async (botId: string) => {
+    try {
+      sound.playClick();
+      await api.deleteBot(botId);
+      setBots(prev => prev.filter(b => b.id !== botId));
+      addToast('info', 'Bot Deleted', 'Bot instance removed');
+      await refreshBots();
+    } catch (err: any) {
+      addToast('error', 'Action Failed', err.message || 'Could not delete bot');
+    }
+  };
+
   // Execute Trade Action
   const executeTrade = async (overrideDirection?: 'CALL' | 'PUT') => {
     if (isExecuting) return;
@@ -327,7 +405,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addToast(
         'success',
         'Order Executed',
-        `Bought ${chosenType} on ${activeMarket.name} (Stake: $${stake.toFixed(2)})`
+        `Bought ${chosenType} on ${activeMarket.name} (Stake: $${(stake || 10).toFixed(2)})`
       );
 
       await refreshPositions();
@@ -344,7 +422,7 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       sound.playClick();
       const closed = await api.sellContract(positionId);
-      const profit = closed.profit || 0;
+      const profit = typeof closed?.profit === 'number' && !isNaN(closed.profit) ? closed.profit : 0;
       if (profit >= 0) {
         sound.playWin();
         addToast('success', 'Position Closed', `Profit: +$${profit.toFixed(2)} USD`);
@@ -449,6 +527,11 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIndicators,
         bots,
         refreshBots,
+        createBot,
+        startBot,
+        pauseBot,
+        stopBot,
+        deleteBot,
         toasts,
         addToast,
         removeToast,

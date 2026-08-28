@@ -149,6 +149,8 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 0.5;
 
+    const safeDigits = typeof digits === 'number' && !isNaN(digits) && digits >= 0 ? digits : 2;
+
     // Horizontal price grid
     const priceSteps = 6;
     for (let i = 0; i <= priceSteps; i++) {
@@ -163,7 +165,7 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
       ctx.fillStyle = '#64748b';
       ctx.font = '10px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(p.toFixed(digits), chartWidth + 6, y + 3);
+      ctx.fillText((p || 0).toFixed(safeDigits), chartWidth + 6, y + 3);
     }
 
     // Vertical time grid
@@ -349,7 +351,7 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
       ctx.fillStyle = '#020617';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(livePrice.toFixed(digits), chartWidth + 6, liveY + 3.5);
+      ctx.fillText((livePrice || 0).toFixed(safeDigits), chartWidth + 6, liveY + 3.5);
     }
 
     // --- 5. Open Positions Overlay Lines ---
@@ -434,7 +436,7 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
       ctx.fillStyle = '#c084fc';
       ctx.font = '10px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`RSI (${indicators.rsiPeriod}): ${lastRsi ? lastRsi.toFixed(1) : '--'}`, 6, currentSubY + 14);
+      ctx.fillText(`RSI (${indicators.rsiPeriod}): ${typeof lastRsi === 'number' && !isNaN(lastRsi) ? lastRsi.toFixed(1) : '--'}`, 6, currentSubY + 14);
 
       currentSubY += subPanelHeight + 10;
     }
@@ -508,7 +510,7 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
       ctx.fillStyle = '#ffffff';
       ctx.font = '10px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(cursorPrice.toFixed(digits), chartWidth + 6, mousePos.y + 3.5);
+      ctx.fillText((cursorPrice || 0).toFixed(safeDigits), chartWidth + 6, mousePos.y + 3.5);
 
       // Identify hovered candle
       const candleIdx = Math.floor(mousePos.x / candleSpacing);
@@ -730,13 +732,13 @@ export const LiveCanvasChart: React.FC<LiveCanvasChartProps> = ({
       {/* OHLC Bar Header */}
       {activeCandle && (
         <div className="absolute top-11 left-3 z-10 flex items-center gap-3 text-[11px] font-mono pointer-events-none bg-slate-950/80 px-2 py-0.5 rounded backdrop-blur-sm border border-slate-800/60 text-slate-400">
-          <div><span className="text-slate-500">O:</span> <span className="text-slate-200">{activeCandle.open.toFixed(digits)}</span></div>
-          <div><span className="text-slate-500">H:</span> <span className="text-slate-200">{activeCandle.high.toFixed(digits)}</span></div>
-          <div><span className="text-slate-500">L:</span> <span className="text-slate-200">{activeCandle.low.toFixed(digits)}</span></div>
+          <div><span className="text-slate-500">O:</span> <span className="text-slate-200">{(activeCandle.open ?? 0).toFixed(digits ?? 2)}</span></div>
+          <div><span className="text-slate-500">H:</span> <span className="text-slate-200">{(activeCandle.high ?? 0).toFixed(digits ?? 2)}</span></div>
+          <div><span className="text-slate-500">L:</span> <span className="text-slate-200">{(activeCandle.low ?? 0).toFixed(digits ?? 2)}</span></div>
           <div>
             <span className="text-slate-500">C:</span>{' '}
-            <span className={activeCandle.close >= activeCandle.open ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
-              {activeCandle.close.toFixed(digits)}
+            <span className={(activeCandle.close ?? 0) >= (activeCandle.open ?? 0) ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+              {(activeCandle.close ?? 0).toFixed(digits ?? 2)}
             </span>
           </div>
           {activeCandle.volume && (

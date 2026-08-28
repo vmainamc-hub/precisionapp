@@ -164,9 +164,9 @@ export const PositionsPanel: React.FC = () => {
                           {pos.contractType}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-slate-200">${pos.stake.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-slate-400">{pos.entryPrice.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-emerald-400 font-bold">{pos.currentPrice.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-slate-200">${(pos?.stake ?? 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-slate-400">{(pos?.entryPrice ?? 0).toFixed(2)}</td>
+                      <td className="py-2 px-3 text-emerald-400 font-bold">{(pos?.currentPrice ?? 0).toFixed(2)}</td>
                       <td className="py-2 px-3">
                         <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300 font-bold">
                           {pos.remainingSeconds}s
@@ -224,9 +224,9 @@ export const PositionsPanel: React.FC = () => {
                           {t.contractType}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-slate-300">${t.stake.toFixed(2)}</td>
+                      <td className="py-2 px-3 text-slate-300">${(t?.stake ?? 0).toFixed(2)}</td>
                       <td className="py-2 px-3 text-[11px] text-slate-400">
-                        {t.entryPrice.toFixed(2)} &rarr; {t.exitPrice ? t.exitPrice.toFixed(2) : '--'}
+                        {(t?.entryPrice ?? 0).toFixed(2)} &rarr; {typeof t?.exitPrice === 'number' && !isNaN(t.exitPrice) ? t.exitPrice.toFixed(2) : '--'}
                       </td>
                       <td className="py-2 px-3">
                         <span
@@ -244,7 +244,7 @@ export const PositionsPanel: React.FC = () => {
                           profit >= 0 ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >
-                        {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
+                        {profit >= 0 ? '+' : ''}${(profit ?? 0).toFixed(2)}
                       </td>
                     </tr>
                   );

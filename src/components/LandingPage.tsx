@@ -45,10 +45,10 @@ export const LandingPage: React.FC = () => {
           </div>
           {markets.slice(0, 7).map(m => (
             <div key={m.symbol} className="flex items-center gap-2 shrink-0">
-              <span className="text-slate-400 font-semibold">{m.name}:</span>
-              <span className="text-white font-bold">{m.basePrice.toFixed(m.digits)}</span>
-              <span className={m.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
-                {m.change24h >= 0 ? '+' : ''}{m.change24h.toFixed(2)}%
+              <span className="text-slate-400 font-semibold">{m?.name}:</span>
+              <span className="text-white font-bold">{(m?.basePrice ?? 0).toFixed(m?.digits ?? 2)}</span>
+              <span className={(m?.change24h ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                {(m?.change24h ?? 0) >= 0 ? '+' : ''}{(m?.change24h ?? 0).toFixed(2)}%
               </span>
             </div>
           ))}
@@ -154,7 +154,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex justify-between items-center text-xs font-mono">
                 <div className="flex items-center gap-2">
                   <span className="text-emerald-400 font-bold">Volatility 100 Index</span>
-                  <span className="text-white font-bold">{livePrice.toFixed(2)}</span>
+                  <span className="text-white font-bold">{(typeof livePrice === 'number' && !isNaN(livePrice) ? livePrice : 1245.50).toFixed(2)}</span>
                 </div>
                 <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-bold">
                   95% Payout Active
